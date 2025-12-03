@@ -1,127 +1,40 @@
-# Shift-Left Container Security on GCP – Demo Explanation
+# Shift-Left Container Security on GCP: Hardening Docker Images During CI/CD
 
-This project demonstrates how to implement **Shift-Left Container Security** using **Google Cloud Build**, **Artifact Registry**, and **Trivy**.  
-The goal is simple: **build a container image, scan it for vulnerabilities during CI, block bad images, and push only clean images to Artifact Registry**.
+This repository demonstrates how to apply **Shift-Left Container Security** on **Google Cloud Platform (GCP)** by hardening Docker images and integrating vulnerability scanning directly into the **CI/CD pipeline** using **Cloud Build** and **Trivy**.
 
-This demo is fully cloud-native — everything runs in **Cloud Shell** and **Cloud Build**, so you don’t need Docker or Trivy installed locally.
+The core idea of this demo:  
+👉 **Catch vulnerabilities early (during image build), not after deployment.**  
+👉 **Block insecure images automatically.**  
+👉 **Push only clean, hardened images to Artifact Registry.**
+
+Everything is executed using **Cloud Shell → Cloud Build**, with no local Docker or Trivy installations required.
 
 ---
 
 ## ⭐ What This Demo Covers
 
-### ✔ Building a Docker image in Cloud Build
-Cloud Build automatically builds the image using your Dockerfile.
+### ✔ Hardened Docker Image  
+A secure Dockerfile based on:
+- Minimal **Alpine** base  
+- **Non-root** user  
+- Least-privilege permissions  
+- Clean, small runtime surface  
 
-### ✔ Scanning the image with Trivy during CI
-A Trivy scan step runs right after the build.  
-If any **HIGH or CRITICAL** vulnerabilities are found, the pipeline fails.
+### ✔ CI/CD Security in Cloud Build  
+A `cloudbuild.yaml` pipeline that:
+1. **Builds** the Docker image  
+2. **Scans** the image using Trivy  
+3. **Fails** the build when HIGH/CRITICAL vulnerabilities are detected  
+4. **Pushes** clean images only  
 
-### ✔ Pushing only clean images to Artifact Registry
-If the scan passes, Cloud Build pushes the clean image to:
+### ✔ Mirrored Trivy Scanner  
+To avoid Docker Hub rate limits or connectivity issues, Trivy is **mirrored into Artifact Registry** and used from there.
 
-
-### ✔ Using a hardened Dockerfile
-The Dockerfile uses:
-- Alpine (small base image)  
-- Non-root user  
-- Minimal packages  
-
-This results in fewer vulnerabilities and a smaller attack surface.
-
-### ✔ Using a mirrored Trivy image
-To avoid Docker Hub rate-limits or pull failures, Trivy was **mirrored into Artifact Registry** so Cloud Build can pull it reliably.
-
----
-
-## ⭐ High-Level Flow of the Demo
-
-1. Developer pushes code / runs Cloud Build manually  
-2. Cloud Build:
-   - Builds the Docker image  
-   - Runs Trivy scan on the built image  
-   - Fails if HIGH/CRITICAL vulnerabilities exist  
-   - Pushes the image only if scan passes  
-3. Image becomes available in Artifact Registry  
-4. (Optional) The image is run to verify everything works  
+### ✔ Shift-Left Security Principle  
+Security is applied **during CI**, not after deployment.  
+Developers receive immediate vulnerability feedback.
 
 ---
 
-## ⭐ Why This Matters (Shift-Left Security)
+## ⭐ Architecture Overview
 
-- Vulnerabilities are caught **early**, inside CI, not after deployment.  
-- Insecure images **never reach production**.  
-- Developers get **immediate feedback**.  
-- Security is baked into the pipeline instead of added later.  
-
-This is exactly what Shift-Left means — moving security **closer to developers**, earlier in the lifecycle.
-
----
-
-## ⭐ Main Components Used
-
-### 1. **Cloud Build**
-Used as the CI system to build, scan, and push images.
-
-### 2. **Artifact Registry**
-Secure container registry where the final clean image is stored.
-
-### 3. **Trivy Scanner**
-Used to detect vulnerabilities inside the container image.
-
-### 4. **Cloud Shell**
-Everything is done via Cloud Shell — no local Docker/Trivy needed.
-
----
-
-## ⭐ What the CI Pipeline Does (Plain English)
-
-### **Build the image**
-Cloud Build runs `docker build` using your Dockerfile.
-
-### **Scan the image**
-Trivy scans the just-built image.  
-The pipeline **fails intentionally** if vulnerabilities are found.
-
-### **Push the image**
-If the scan passes, Cloud Build pushes the image to Artifact Registry.
-
-### **Store a JSON scan report (if enabled)**
-Trivy’s report can also be uploaded for auditing.
-
----
-
-## ⭐ What You Can Show in Your Demo Video
-
-- Show Cloud Shell workspace  
-- Show the Dockerfile (highlight non-root and Alpine base)  
-- Show the `cloudbuild.yaml` pipeline  
-- Trigger Cloud Build  
-- Watch the steps: build → scan → push  
-- Verify the image in Artifact Registry  
-- *(Optional)* Pull and run the image  
-- Open Cloud Build History to show vulnerability results or success logs  
-
-This creates a clean, structured, professional walkthrough for the audience.
-
----
-
-## ⭐ Next Steps (Optional Enhancements)
-
-- Add **Cosign + Cloud KMS** image signing  
-- Enforce signatures via **Binary Authorization**  
-- Add **GitHub → Cloud Build** triggers  
-- Add **SBOM** (Software Bill of Materials) generation  
-- Add **Slack alerts** on build failures  
-
----
-
-## ⭐ Conclusion
-
-This demo shows an end-to-end example of **Shift-Left Container Security** on GCP:
-
-- Build early  
-- Scan early  
-- Block early  
-- Deploy only clean, verified images  
-
-This approach improves developer experience, increases security, and reduces risk — all while seamlessly integrating into a standard CI/CD workflow.
