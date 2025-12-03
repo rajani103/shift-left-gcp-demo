@@ -1,0 +1,24 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build','-t','us-central1-docker.pkg.dev/devfest-nepal/demo-repo/demo-app:latest','.']
+
+# Use mirrored Trivy image from Artifact Registry to avoid Docker Hub pulls
+- name: 'us-central1-docker.pkg.dev/devfest-nepal/demo-repo/trivy:latest'
+  id: 'vulnerability-scan'
+  entrypoint: 'sh'
+  args:
+    - '-c'
+    - |
+      echo "Scanning us-central1-docker.pkg.dev/devfest-nepal/demo-repo/demo-app:latest ..."
+      # write JSON report and exit non-zero if HIGH/CRITICAL found
+      trivy image --format json --output trivy-report.json --severity CRITICAL,HIGH us-central1-docker.pkg.dev/devfest-nepal/demo-repo/demo-app:latest || true
+      # print report for logs
+      cat trivy-report.json || true
+      # fail the step if any HIGH/CRITICAL vulnerabilities exist
+      jq -e '.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL" or .Severity=="HIGH")' trivy-report.json >/dev/null 2>&1 && (echo "Found HIGH/CRITICAL; failing"; exit 1) || echo "No HIGH/CRITICAL"
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push','us-central1-docker.pkg.dev/devfest-nepal/demo-repo/demo-app:latest']
+
+images:
+  - 'us-central1-docker.pkg.dev/devfest-nepal/demo-repo/demo-app:latest'
